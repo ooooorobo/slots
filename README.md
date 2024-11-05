@@ -55,6 +55,36 @@ export const Page = () => {
 
 만약에 name이 header나 rightTop인 Slot을 하나도 넘기지 않았다면, CardHeader나 CardRightTop은 아예 렌더링되지 않음. Card 컴포넌트 안에서 조건부 렌더링을 하지 않아도 된다는 장점. 근데 각 슬롯의 레이아웃이 SlotConfig로 빠지게 되니 코드 흐름이 왔다갔다하게 되는 단점.
 
+근데 type-safe하게 하려면 Context랑 Compound를 혼합해서 써야할 것 같음. 지금 `CardV2` 방식이 그거
+
+```tsx
+const { SlotProvider, Slot, useSlots } = createSlot({
+  header: CardHeader,
+  rightTop: ({ children }: PropsWithChildren) => (
+          <div style={{ position: "absolute", top: 0, right: 0 }}>{children}</div>
+  ),
+});
+
+const Card = ({ children }: { children: ReactNode }) => {
+  const slots = useSlots(children);
+
+  return (
+          <SlotProvider>
+            <div className="card" style={{ position: "relative" }}>
+              {slots.header}
+              {slots.rightTop}
+            </div>
+          </SlotProvider>
+  );
+};
+
+const CardNamespace = Object.assign(Card, {
+  Slot,
+});
+
+export { CardNamespace as Card };
+```
+
 ## 2
 
 slotConfig에 받은 element를 슬롯 체크용으로 사용하는 버전
@@ -98,6 +128,8 @@ useSlots 내부적으로 어느 슬롯에 컴포넌트를 넣을지 판단할 �
 
 이거 특징(장점?)은 CompoundPattern처럼 `Card.CardHeader = CardHeader` 같은 할당을 하지 않아도 된다는 점, 각 컴포넌트의 자리를 지정해 줄 수 있다는 점
 
+근데 그렇다 보니 오히려 슬롯이라는 티가 잘 안 나는 것 같다
+
 ## 3
 
 renderProps 방식으로 할 수도 있음
@@ -128,3 +160,5 @@ type CardProps = {
 ```
 
 1번 방식이랑 비슷한데, 이렇게 하면 좋은 점은 Context나 Compound 방식 없이도 Slot을 type-safe하게 사용할 수 있음 (아마도)
+
+Card 컴포넌트 내부가 1번에 비해서 단순해질 것 같다
